@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HORARIOS</title>
+
+  <style>
+    
+  </style>
+
+  
+</head>
+<body>
+  <!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operational Weekly Planner Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            morning: '#90ee90',
+            afternoon: '#7dd3fc',
+            night: '#fed7aa',
+            vacation: '#ffff80',
+            off: '#cbd5e1'
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+            pulseGlow: { '0%, 100%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.03)' } },
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(15px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+          },
+          animation: {
+            'modal-in': 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'pulse-glow': 'pulseGlow 2s infinite ease-in-out',
+            'slide-up': 'slideUp 0.3s ease-out forwards'
+          }
+        }
+      }
+    }
+    </script>
+    <!-- Firebase SDK Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- html2canvas for WhatsApp export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+                 
+        .shift-morning { background-color: #90ee90 !important; color: #000000 !important; font-weight: 600; }
+        .shift-afternoon { background-color: #7dd3fc !important; color: #0369a1 !important; font-weight: 600; }
+        .shift-night { background-color: #fed7aa !important; color: #7c2d12 !important; font-weight: 600; }
+        .shift-vacation { background-color: #ffff80 !important; color: #854d0e !important; font-weight: 600; }
+        .shift-off { background-color: #cbd5e1 !important; color: #334155 !important; font-weight: 600; }
+                 
+        .labor-warning { box-shadow: inset 0 0 0 2px #ef4444 !important; position: relative; animation: pulseGlow 1.5s infinite; }
+                 
+        .interactive-cell {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
+        .interactive-cell:hover {
+            transform: scale(1.03);
+            z-index: 10;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            filter: brightness(1.05);
+        }
+
+        .interactive-btn {
+            transition: all 0.2s ease;
+        }
+        .interactive-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.08);
+        }
+        .interactive-btn:active {
+            transform: translateY(1px);
+        }
+
+        .tooltip { 
+             visibility: hidden; 
+             position: absolute; 
+             z-index: 50; 
+             bottom: 110%; 
+             left: 50%; 
+             transform: translateX(-50%) translateY(4px); 
+             background-color: #1e293b; 
+             color: #fff; 
+             padding: 5px 10px; 
+             border-radius: 6px; 
+             font-size: 10px; 
+             white-space: nowrap; 
+             opacity: 0; 
+             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+             pointer-events: none; 
+             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); 
+         }
+        .has-tooltip:hover .tooltip { 
+             visibility: visible; 
+             opacity: 1; 
+             transform: translateX(-50%) translateY(0); 
+         }
+
+        table th, table td {
+            width: 11.5%;
+        }
+        table td:first-child, table th:first-child {
+            width: 19% !important;
+        }
+
+        ::-webkit-scrollbar { height: 6px; width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-full flex flex-col animate-slide-up overflow-x-hidden">
+
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-40 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-indigo-700 p-2 rounded-lg text-indigo-200 shadow-inner">
+                    <i class="fa-solid fa-calendar-days text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold tracking-tight">Planificador Operativo Semanal</h1>
+                    <p class="text-[11px] text-indigo-300">Última actualización: <span id="last-update-time">Hoy, 12:03 PM</span> | Estado: <span id="sync-status" class="text-emerald-400 font-medium">Conectando a Firebase...</span></p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="autoPlanWeek()" class="interactive-btn bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-lg shadow transition flex items-center" title="Auto-planifica según la Ocupación y Eventos de la semana activa">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-violet-200"></i> Auto-Planificar
+                </button>
+
+                <div class="bg-indigo-800/80 rounded-lg p-1 flex items-center border border-indigo-700 shadow-inner">
+                    <button onclick="changeWeek(-1)" class="interactive-btn px-2.5 py-1 text-[11px] font-semibold rounded-md hover:bg-indigo-700 transition" title="Semana Anterior"><i class="fa-solid fa-chevron-left mr-1"></i> Anterior</button>
+                    <span id="week-display-label" class="px-2.5 text-[11px] font-bold text-indigo-100 cursor-pointer hover:underline" onclick="changeWeek(1)" title="Clic para avanzar una semana">Semana Actual</span>
+                    <button onclick="changeWeek(1)" class="interactive-btn px-2.5 py-1 text-[11px] font-semibold rounded-md hover:bg-indigo-700 transition" title="Semana Siguiente">Siguiente <i class="fa-solid fa-chevron-right ml-1"></i></button>
+                </div>
+
+                <button id="manual-save-btn" onclick="manualSaveData()" class="interactive-btn bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-lg shadow transition flex items-center">
+                    <i class="fa-solid fa-floppy-disk mr-1.5"></i> Guardar Cambios
+                </button>
+                <button onclick="openSummaryModal()" class="interactive-btn bg-indigo-700 hover:bg-indigo-600 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg shadow transition flex items-center">
+                    <i class="fa-solid fa-chart-pie mr-1"></i> Resumen
+                </button>
+                <button onclick="exportToWhatsApp()" class="interactive-btn bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-lg shadow transition flex items-center">
+                    <i class="fa-brands fa-whatsapp text-xs mr-1.5"></i> Descargar Imagen para WhatsApp
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-3 flex flex-col gap-3">
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-3.5 flex flex-col justify-between hover:shadow transition duration-300">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Ocupación Beach House</span>
+                        <h2 class="text-sm font-bold text-slate-800 mt-1">Días de Pico Operativo</h2>
+                    </div>
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <i class="fa-solid fa-hotel text-sm"></i>
+                    </div>
+                </div>
+                <div class="mt-2.5 grid grid-cols-7 gap-1 text-center" id="peak-occupancy-indicators"></div>
+                <p class="text-[10px] text-slate-400 mt-2 flex items-center"><i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> Clic en cualquier número para editar.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-3.5 flex flex-col justify-between hover:shadow transition duration-300">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Normas Laborales</span>
+                        <h2 class="text-sm font-bold text-slate-800 mt-1">Validación de Turnos (24/7)</h2>
+                    </div>
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                        <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                    </div>
+                </div>
+                <div class="mt-1 flex items-center justify-between">
+                    <div>
+                        <p class="text-xl font-black text-slate-800" id="labor-warnings-count">0</p>
+                        <p class="text-[10px] text-slate-500">Incidencias (Cobertura, Descanso &amp; Nocturnos)</p>
+                    </div>
+                    <button onclick="openWarningsModal()" class="interactive-btn text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition shadow-sm">Ver Detalle</button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 flex items-center"><i class="fa-solid fa-hand-pointer mr-1 text-amber-500"></i> Clic en cualquier celda para editar.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-3.5 flex flex-col justify-between hover:shadow transition duration-300">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Estado de Plantilla</span>
+                        <h2 class="text-sm font-bold text-slate-800 mt-1">Personal Operativo</h2>
+                    </div>
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                        <i class="fa-solid fa-users text-sm"></i>
+                    </div>
+                </div>
+                <div class="mt-1 flex items-center justify-between">
+                    <div>
+                        <p class="text-xl font-black text-slate-800" id="total-staff-count">11 <span class="text-[11px] font-normal text-slate-500">empleados</span></p>
+                        <p class="text-[10px] text-emerald-600 font-medium"><i class="fa-solid fa-check mr-1"></i> Cobertura completa</p>
+                    </div>
+                    <button onclick="openStaffManagerModal()" class="interactive-btn text-[11px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition shadow-sm flex items-center">
+                        <i class="fa-solid fa-user-gear mr-1"></i> Gestionar Personal
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Administra colaboradores, nombres y altas.</p>
+            </div>
+        </section>
+
+        <!-- PANEL DE INTELIGENCIA OPERATIVA -->
+        <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-xl shadow-md border border-indigo-800/60 p-4 text-white">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 pb-2 border-b border-indigo-800/60">
+                <div class="flex items-center space-x-2.5">
+                    <div class="bg-indigo-600 p-2 rounded-lg text-white shadow">
+                        <i class="fa-solid fa-brain text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold tracking-wide">Inteligencia Operativa y Recomendaciones</h2>
+                        <p class="text-[11px] text-indigo-300">Análisis basado en rangos de ocupación (&lt;50 Muy Baja | 50-89 Normal | 90-149 Media | 150-249 Alta | &gt;250 Extrema)</p>
+                    </div>
+                </div>
+                <button onclick="toggleIntelligencePanel()" id="intel-toggle-btn" class="interactive-btn text-xs bg-indigo-800/80 hover:bg-indigo-700 text-indigo-200 px-3 py-1.5 rounded-lg border border-indigo-700 transition flex items-center">
+                    <i class="fa-solid fa-chevron-down mr-1.5" id="intel-chevron"></i> <span id="intel-toggle-text">Ocultar Panel</span>
+                </button>
+            </div>
+
+            <div id="intelligence-panel-body" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="bg-indigo-900/50 p-3.5 rounded-xl border border-indigo-700/50 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded border border-rose-800/50"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Alertas de Escasez</span>
+                            <span id="shortage-count" class="text-xs font-bold text-rose-300">0</span>
+                        </div>
+                        <div id="shortage-alerts-list" class="space-y-1.5 max-h-32 overflow-y-auto text-xs text-indigo-100"></div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-900/50 p-3.5 rounded-xl border border-indigo-700/50 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-sky-300 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800/50"><i class="fa-solid fa-circle-info mr-1"></i> Alertas de Exceso</span>
+                            <span id="surplus-count" class="text-xs font-bold text-sky-300">0</span>
+                        </div>
+                        <div id="surplus-alerts-list" class="space-y-1.5 max-h-32 overflow-y-auto text-xs text-indigo-100"></div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-900/50 p-3.5 rounded-xl border border-indigo-700/50 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50"><i class="fa-solid fa-lightbulb mr-1"></i> Rotación y Optimización</span>
+                        </div>
+                        <div id="recommendations-list" class="space-y-1.5 max-h-32 overflow-y-auto text-xs text-indigo-100"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN DE LA TABLA PRINCIPAL -->
+        <section id="schedule-export-container" class="bg-white rounded-xl shadow-md border border-slate-200/80 overflow-hidden flex flex-col p-2">
+            <div class="bg-indigo-900 text-white px-4 py-3 font-bold text-center text-xs md:text-sm tracking-wide shadow rounded-lg mb-2" id="table-main-title">
+                Cargando Horario Operativo...
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-center text-[11px] md:text-xs table-fixed" id="schedule-table"></table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modales estándar -->
+    <div id="summary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 animate-modal-in">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-chart-pie mr-2"></i> Resumen Semanal Operativo</h3>
+                <button onclick="closeSummaryModal()" class="text-indigo-200 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto" id="summary-content"></div>
+            <div class="bg-slate-50 px-6 py-3.5 flex justify-end border-t border-slate-200">
+                <button onclick="closeSummaryModal()" class="interactive-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="warnings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 animate-modal-in">
+            <div class="bg-amber-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Auditoría de Normas Laborales (24/7)</h3>
+                <button onclick="closeWarningsModal()" class="text-amber-100 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-3 max-h-[70vh] overflow-y-auto" id="warnings-content"></div>
+            <div class="bg-slate-50 px-6 py-3.5 flex justify-end border-t border-slate-200">
+                <button onclick="closeWarningsModal()" class="interactive-btn bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE GESTIÓN DE PERSONAL Y DEPARTAMENTOS -->
+    <div id="staff-manager-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden border border-slate-200 animate-modal-in flex flex-col max-h-[85vh] m-auto">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-user-gear mr-2"></i> Gestión de Personal y Departamentos</h3>
+                <button onclick="closeStaffManagerModal()" class="text-indigo-200 hover:text-white text-lg transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-5 overflow-y-auto flex-1 bg-slate-50">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center">
+                        <i class="fa-solid fa-folder-plus mr-1.5 text-indigo-600"></i> Crear Nuevo Departamento / Área
+                    </h4>
+                    <div class="flex gap-3">
+                        <input type="text" id="new-dept-name" placeholder="Ej. Mantenimiento, Recepción..." class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <button onclick="addNewDepartment()" class="interactive-btn bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold py-2 px-4 rounded-lg shadow transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Agregar Departamento
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center">
+                        <i class="fa-solid fa-user-plus mr-1.5 text-indigo-600"></i> Agregar Nuevo Colaborador
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nombre Completo</label>
+                            <input type="text" id="new-staff-name" placeholder="Ej. Carlos Mendoza" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Departamento</label>
+                            <select id="new-staff-dept" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"></select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="addNewStaffMember()" class="w-full interactive-btn bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-4 rounded-lg shadow transition">
+                                <i class="fa-solid fa-user-check mr-1"></i> Registrar Empleado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Listado de Departamentos y Personal</h4>
+                    <div id="staff-manager-list" class="space-y-3"></div>
+                </div>
+            </div>
+            <div class="bg-white px-6 py-3.5 flex justify-between items-center border-t border-slate-200 shrink-0">
+                <button onclick="resetData()" class="interactive-btn text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 px-3.5 py-2 rounded-xl font-medium transition shadow-sm border border-rose-200">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Restaurar Valores Originales
+                </button>
+                <button onclick="closeStaffManagerModal()" class="interactive-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2 rounded-xl transition shadow">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Turnos -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-modal-in m-auto">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-pen-to-square mr-2"></i> Gestión y Selección de Turno</h3>
+                <button onclick="closeEditModal()" class="text-indigo-200 hover:text-white text-lg transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Colaborador y Día Seleccionado</label>
+                    <p id="edit-target-label" class="text-sm font-bold text-slate-800 bg-slate-100 p-3 rounded-xl border border-slate-200 shadow-inner"></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-2">Selección Rápida de Turno (Clic para guardar de inmediato)</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" onclick="selectPresetShift('7 am - 4 pm', 'morning')" class="interactive-btn p-2.5 text-xs font-semibold rounded-xl border border-slate-300 bg-[#90ee90] text-slate-900 text-left flex items-center justify-between shadow-sm">
+                            <span>7 am - 4 pm</span> <span class="text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">Mañana</span>
+                        </button>
+                        <button type="button" onclick="selectPresetShift('6 am - 3 pm', 'morning')" class="interactive-btn p-2.5 text-xs font-semibold rounded-xl border border-slate-300 bg-[#90ee90] text-slate-900 text-left flex items-center justify-between shadow-sm">
+                            <span>6 am – 3 pm</span> <span class="text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">Mañana</span>
+                        </button>
+                        <button type="button" onclick="selectPresetShift('2 pm - 11 pm', 'afternoon')" class="interactive-btn p-2.5 text-xs font-semibold rounded-xl border border-slate-300 bg-[#7dd3fc] text-[#0369a1] text-left flex items-center justify-between shadow-sm">
+                            <span>2 pm – 11 pm</span> <span class="text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">Tarde</span>
+                        </button>
+                        <button type="button" onclick="selectPresetShift('9 pm - 6 am', 'night')" class="interactive-btn p-2.5 text-xs font-semibold rounded-xl border border-slate-300 bg-[#fed7aa] text-[#7c2d12] text-left flex items-center justify-between shadow-sm">
+                            <span>9 pm – 6 am</span> <span class="text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">Noche</span>
+                        </button>
+                        <button type="button" onclick="selectPresetShift('OFF', 'off')" class="interactive-btn p-2.5 text-xs font-semibold rounded-xl border border-slate-300 bg-[#cbd5e1] text-slate-800 text-left flex items-center justify-between shadow-sm">
+                            <span>OFF</span> <span class="text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">Descanso</span>
+                        </button>
+                        <button type="button" onclick="selectPresetShift('Vacaciones', 'vacation')" class="interactive-btn p-2.5 text-xs font-semibold rounded-xl border border-slate-300 bg-[#ffff80] text-amber-900 text-left flex items-center justify-between shadow-sm">
+                            <span>Vacaciones</span> <span class="text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">Vacaciones</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Horario o Texto Personalizado</label>
+                        <input type="text" id="edit-input-value" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none transition shadow-inner">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Nota o Instrucción</label>
+                        <input type="text" id="edit-note-value" placeholder="Ej. (Montar revisión)" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none transition shadow-inner">
+                    </div>
+                </div>
+                <input type="hidden" id="edit-type-select" value="morning">
+            </div>
+            <div class="bg-slate-50 px-6 py-3.5 flex justify-end space-x-2.5 border-t border-slate-200">
+                <button onclick="closeEditModal()" class="interactive-btn px-4 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="saveCellEdit()" class="interactive-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4.5 py-2 rounded-xl transition shadow">Guardar Turno</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales adicionales -->
+    <div id="occupancy-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200 animate-modal-in m-auto">
+            <div class="bg-sky-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-hotel mr-2"></i> Editar Ocupación</h3>
+                <button onclick="closeOccupancyModal()" class="text-sky-100 hover:text-white text-lg transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-2" id="occupancy-target-label">Día Seleccionado</label>
+                    <input type="number" id="occupancy-input-value" min="0" max="300" class="w-full px-4 py-3 border border-slate-300 rounded-xl text-lg font-bold text-indigo-900 focus:ring-2 focus:ring-sky-500 focus:outline-none text-center shadow-inner">
+                </div>
+            </div>
+            <div class="bg-slate-50 px-6 py-3.5 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closeOccupancyModal()" class="interactive-btn px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="saveOccupancyEdit()" class="interactive-btn bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-4.5 py-2 rounded-xl transition shadow">Actualizar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dinner-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-modal-in m-auto">
+            <div class="bg-amber-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-utensils mr-2"></i> Gestionar Dinner / Cenna</h3>
+                <button onclick="closeDinnerModal()" class="text-amber-100 hover:text-white text-lg transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1" id="dinner-target-label">Día Seleccionado</label>
+                    <select id="dinner-preset-select" onchange="onDinnerPresetChange()" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none mb-3 shadow-inner bg-white">
+                        <option value="Beach House a la carte">Beach House a la carte</option>
+                        <option value="Burger Night at Bouchie's">Burger Night at Bouchie's</option>
+                        <option value="Nursery">Nursery</option>
+                        <option value="Gala Dinner">Gala Dinner</option>
+                        <option value="Chef's Special Tasting">Chef's Special Tasting</option>
+                        <option value="Custom">Otro (Personalizado)...</option>
+                    </select>
+                    <input type="text" id="dinner-input-value" placeholder="Nombre de la cena..." class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-inner">
+                </div>
+            </div>
+            <div class="bg-slate-50 px-6 py-3.5 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closeDinnerModal()" class="interactive-btn px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="saveDinnerEdit()" class="interactive-btn bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-4.5 py-2 rounded-xl transition shadow">Guardar Dinner</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="event-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-modal-in m-auto">
+            <div class="bg-teal-700 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center"><i class="fa-solid fa-calendar-star mr-2"></i> Gestionar Evento / Nota</h3>
+                <button onclick="closeEventModal()" class="text-teal-100 hover:text-white text-lg transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1" id="event-target-label">Día Seleccionado</label>
+                    <select id="event-preset-select" onchange="onEventPresetChange()" class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none mb-3 shadow-inner bg-white">
+                        <option value="--">-- (Ninguno)</option>
+                        <option value="VIP Arrival">VIP Arrival</option>
+                        <option value="Private Event">Private Event</option>
+                        <option value="Maintenance Notice">Maintenance Notice</option>
+                        <option value="Custom">Otro (Personalizado)...</option>
+                    </select>
+                    <input type="text" id="event-input-value" placeholder="Detalle del evento..." class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none shadow-inner">
+                </div>
+            </div>
+            <div class="bg-slate-50 px-6 py-3.5 flex justify-end space-x-2 border-t border-slate-200">
+                <button onclick="closeEventModal()" class="interactive-btn px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="saveEventEdit()" class="interactive-btn bg-teal-700 hover:bg-teal-600 text-white text-xs font-semibold px-4.5 py-2 rounded-xl transition shadow">Guardar Evento</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            databaseURL: "https://horarios-bellman-y-security-default-rtdb.firebaseio.com",
+            projectId: "horarios-bellman-y-security",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+
+        const initialData = {
+            startDate: getMondayDateStr(new Date()),
+            dinners: [
+                "Beach House a la carte", 
+                "Beach House a la carte", 
+                "Beach House a la carte", 
+                "Beach House a la carte", 
+                "Burger Night at Bouchie's", 
+                "Nursery", 
+                "Beach House a la carte"
+            ],
+            events: ["--", "--", "--", "--", "--", "--", "--"],
+            occupancy: [24, 25, 15, 20, 28, 33, 31],
+            departments: [
+                {
+                    name: "DIRECTOR DE OPERACIONES",
+                    staff: [
+                        { name: "Daniel Cabrera", shifts: Array(7).fill({text: "ON", type: "morning"})}
+                    ]
+                },
+                {
+                    name: "SPA",
+                    staff: [
+                        { name: "Erik Benítez", shifts: Array(7).fill({text: "OFF", type: "off"})}
+                    ]
+                },
+                {
+                    name: "BELLMANS",
+                    staff: [
+                        { name: "Ignacio Montaño", shifts: [
+                            {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "7 am - 4 pm", type: "morning"}
+                        ]},
+                        { name: "Fernando Gonzalez", shifts: [
+                            {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}
+                        ]},
+                        { name: "Esteban Agundez", shifts: [
+                            {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}
+                        ]},
+                        { name: "Xasharitl Cuevas", shifts: [
+                            {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "7 am - 4 pm", type: "morning"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}
+                        ]}
+                    ]
+                },
+                {
+                    name: "SEGURIDAD",
+                    staff: [
+                        { name: "Juan Carlos Corazón", shifts: [
+                            {text: "Vacaciones", type: "vacation"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "9 pm - 6 am", type: "night"}, {text: "9 pm - 6 am", type: "night"}
+                        ]},
+                        { name: "José Luis Huerta", shifts: [
+                            {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "6 am - 3 pm", type: "morning"}, {text: "6 am - 3 pm", type: "morning"}, {text: "6 am - 3 pm", type: "morning"}, {text: "6 am - 3 pm", type: "morning"}, {text: "6 am - 3 pm", type: "morning"}
+                        ]},
+                        { name: "Francisco Tinajero", shifts: [
+                            {text: "9 pm - 6 am", type: "night"}, {text: "9 pm - 6 am", type: "night"}, {text: "9 pm - 6 am", type: "night"}, {text: "9 pm - 6 am", type: "night"}, {text: "9 pm - 6 am", type: "night"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}
+                        ]},
+                        { name: "Ulises De La Peña", shifts: [
+                            {text: "6 am - 3 pm", type: "morning"}, {text: "6 am - 3 pm", type: "morning"}, {text: "9 pm - 6 am", type: "night"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}
+                        ]},
+                        { name: "Diego Gonzalez", shifts: [
+                            {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "2 pm - 11 pm", type: "afternoon"}, {text: "OFF", type: "off"}, {text: "OFF", type: "off"}
+                        ]}
+                    ]
+                }
+            ]
+        };
+
+        const STORAGE_KEY = 'operational_schedule_data_v7';
+        let currentStartDate = getMondayDateStr(new Date());
+        let currentData = JSON.parse(JSON.stringify(initialData));
+        let activeEditCell = null;
+        let activeOccupancyIdx = null;
+        let activeDinnerIdx = null;
+        let activeEventIdx = null;
+        let autosaveTimer = null;
+        let currentListenerRef = null;
+
+        function getMondayDateStr(d) {
+            let date = new Date(d);
+            let day = date.getDay();
+            let diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            let monday = new Date(date.setDate(diff));
+            let year = monday.getFullYear();
+            let month = String(monday.getMonth() + 1).padStart(2, '0');
+            let dayNum = String(monday.getDate()).padStart(2, '0');
+            return `${year}-${month}-${dayNum}`;
+        }
+
+        function initFirebaseSyncForCurrentWeek() {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.textContent = "Conectando a Firebase...";
+            statusEl.className = "text-amber-400 font-medium animate-pulse";
+
+            let weekId = getMondayDateStr(new Date(currentStartDate + "T00:00:00"));
+            currentStartDate = weekId;
+
+            if (currentListenerRef) currentListenerRef.off();
+            currentListenerRef = database.ref('schedules/' + weekId);
+
+            currentListenerRef.on('value', (snapshot) => {
+                const firebaseData = snapshot.val();
+                if (firebaseData && firebaseData.departments && firebaseData.occupancy) {
+                    currentData = firebaseData;
+                    if (!currentData.startDate) currentData.startDate = weekId;
+                    if (!currentData.dinners) currentData.dinners = JSON.parse(JSON.stringify(initialData.dinners));
+                    if (!currentData.events) currentData.events = JSON.parse(JSON.stringify(initialData.events));
+                    
+                    localStorage.setItem(STORAGE_KEY + '_' + weekId, JSON.stringify(currentData));
+                    renderApp();
+
+                    statusEl.textContent = "Sincronizado con Firebase en tiempo real";
+                    statusEl.className = "text-emerald-400 font-medium";
+                    document.getElementById('last-update-time').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                } else {
+                    loadFallbackLocal(weekId);
+                }
+            }, (error) => {
+                statusEl.textContent = "Modo Offline (LocalStorage)";
+                statusEl.className = "text-rose-400 font-medium";
+                loadFallbackLocal(weekId);
+            });
+        }
+
+        function loadFallbackLocal(weekId) {
+            const local = localStorage.getItem(STORAGE_KEY + '_' + weekId);
+            if (local) {
+                try {
+                    currentData = JSON.parse(local);
+                } catch(e) {
+                    currentData = JSON.parse(JSON.stringify(initialData));
+                    currentData.startDate = weekId;
+                }
+            } else {
+                currentData = JSON.parse(JSON.stringify(initialData));
+                currentData.startDate = weekId;
+            }
+            if (!currentData.startDate) currentData.startDate = weekId;
+            renderApp();
+        }
+
+        function getFormattedWeekDays() {
+            const daysNames = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+            let baseDate = new Date(currentData.startDate + "T00:00:00");
+            let formattedDays = [];
+            let weekDates = [];
+
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(baseDate);
+                d.setDate(baseDate.getDate() + i);
+                weekDates.push(new Date(d));
+                formattedDays.push(`${daysNames[i]} ${d.getDate()}`);
+            }
+
+            let startD = weekDates[0];
+            let endD = weekDates[6];
+            let titleRange = (startD.getMonth() === endD.getMonth()) 
+                ? `${monthNames[startD.getMonth()]} ${startD.getDate()} – ${endD.getDate()}, ${endD.getFullYear()}`
+                : `${monthNames[startD.getMonth()]} ${startD.getDate()} – ${monthNames[endD.getMonth()]} ${endD.getDate()}, ${endD.getFullYear()}`;
+
+            return { days: formattedDays, weekTitle: `Horario ${titleRange}` };
+        }
+
+        function saveData() {
+            let weekId = getMondayDateStr(new Date(currentData.startDate + "T00:00:00"));
+            localStorage.setItem(STORAGE_KEY + '_' + weekId, JSON.stringify(currentData));
+            database.ref('schedules/' + weekId).set(currentData).catch(e => console.error("Firebase save error:", e));
+        }
+
+        function triggerAutosave() {
+            if (autosaveTimer) clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(() => saveData(), 800);
+        }
+
+        function manualSaveData() {
+            if (autosaveTimer) clearTimeout(autosaveTimer);
+            saveData();
+            showToast("¡Cambios guardados y sincronizados en Firebase!");
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-2 animate-bounce';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i><span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- GESTIÓN DE DEPARTAMENTOS Y PERSONAL ---
+        function openStaffManagerModal() {
+            renderStaffManagerList();
+            renderDepartmentSelectOptions();
+            document.getElementById('staff-manager-modal').classList.remove('hidden');
+        }
+        function closeStaffManagerModal() { document.getElementById('staff-manager-modal').classList.add('hidden'); }
+
+        function renderDepartmentSelectOptions() {
+            const selectEl = document.getElementById('new-staff-dept');
+            let html = '';
+            currentData.departments.forEach(dept => {
+                html += `<option value="${dept.name}">${dept.name}</option>`;
+            });
+            selectEl.innerHTML = html;
+        }
+
+        function addNewDepartment() {
+            const inputEl = document.getElementById('new-dept-name');
+            const deptName = inputEl.value.trim().toUpperCase();
+
+            if(!deptName) {
+                showToast("Por favor ingresa el nombre del departamento.");
+                return;
+            }
+
+            let exists = currentData.departments.some(d => d.name === deptName);
+            if(exists) {
+                showToast("Este departamento ya existe.");
+                return;
+            }
+
+            currentData.departments.push({
+                name: deptName,
+                staff: []
+            });
+
+            triggerAutosave();
+            renderApp();
+            renderStaffManagerList();
+            renderDepartmentSelectOptions();
+            inputEl.value = "";
+            showToast(`Departamento ${deptName} creado con éxito.`);
+        }
+
+        function addNewStaffMember() {
+            const nameInput = document.getElementById('new-staff-name');
+            const deptSelect = document.getElementById('new-staff-dept');
+            const name = nameInput.value.trim();
+            const deptName = deptSelect.value;
+
+            if(!name) {
+                showToast("Por favor ingresa el nombre del colaborador.");
+                return;
+            }
+
+            const dept = currentData.departments.find(d => d.name === deptName);
+            if(dept) {
+                dept.staff.push({
+                    name: name,
+                    shifts: Array(7).fill({text: "OFF", type: "off"})
+                });
+                triggerAutosave();
+                renderApp();
+                renderStaffManagerList();
+                nameInput.value = "";
+                showToast(`Colaborador ${name} agregado con éxito.`);
+            }
+        }
+
+        function deleteStaffMember(dIdx, sIdx) {
+            let staffName = currentData.departments[dIdx].staff[sIdx].name;
+            if(confirm(`¿Eliminar a ${staffName} de la plantilla?`)) {
+                currentData.departments[dIdx].staff.splice(sIdx, 1);
+                triggerAutosave();
+                renderApp();
+                renderStaffManagerList();
+                showToast("Colaborador eliminado.");
+            }
+        }
+
+        function deleteDepartment(dIdx) {
+            let deptName = currentData.departments[dIdx].name;
+            if(confirm(`¿Estás seguro de eliminar el departamento ${deptName} y todo su personal?`)) {
+                currentData.departments.splice(dIdx, 1);
+                triggerAutosave();
+                renderApp();
+                renderStaffManagerList();
+                renderDepartmentSelectOptions();
+                showToast("Departamento eliminado.");
+            }
+        }
+
+        function renderStaffManagerList() {
+            const container = document.getElementById('staff-manager-list');
+            let html = '';
+
+            currentData.departments.forEach((dept, dIdx) => {
+                html += `<div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">`;
+                html += `<div class="bg-slate-100 px-4 py-2 border-b border-slate-200 flex justify-between items-center">`;
+                html += `<span class="text-xs font-bold text-slate-800 uppercase tracking-wide"><i class="fa-solid fa-users-rectangle mr-1.5 text-indigo-600"></i> ${dept.name} (${dept.staff.length})</span>`;
+                if(currentData.departments.length > 1) {
+                    html += `<button onclick="deleteDepartment(${dIdx})" class="text-rose-500 hover:text-rose-700 text-xs px-2 py-1 rounded transition" title="Eliminar departamento"><i class="fa-solid fa-trash-can mr-1"></i> Eliminar Área</button>`;
+                }
+                html += `</div>`;
+                html += `<div class="p-3 divide-y divide-slate-100">`;
+
+                if(dept.staff.length === 0) {
+                    html += `<p class="text-xs text-slate-400 py-2 text-center italic">Sin personal en este departamento.</p>`;
+                } else {
+                    dept.staff.forEach((member, sIdx) => {
+                        html += `<div class="py-2 flex items-center justify-between gap-3">`;
+                        html += `<span class="text-xs font-semibold text-slate-700">${member.name}</span>`;
+                        html += `<button onclick="deleteStaffMember(${dIdx}, ${sIdx})" class="text-rose-500 hover:text-rose-700 text-xs px-2 py-1 rounded hover:bg-rose-50 transition" title="Eliminar empleado"><i class="fa-solid fa-user-minus"></i></button>`;
+                        html += `</div>`;
+                    });
+                }
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // --- AUTO-PLANIFICADOR CONECTADO A LA SEMANA ACTIVA ---
+        function autoPlanWeek() {
+            if(!confirm("¿Auto-planificar considerando la Ocupación y Eventos de ESTA semana?")) return;
+
+            // Lee directamente el arreglo de ocupación y eventos de la semana que está visualizando el usuario
+            currentData.occupancy.forEach((occ, day) => {
+                let eventText = currentData.events[day] || "--";
+                let isHighDemand = occ >= 150 || eventText !== "--";
+
+                const bellmanDept = currentData.departments.find(d => d.name === "BELLMANS");
+                if (bellmanDept) {
+                    bellmanDept.staff.forEach((st, sIdx) => {
+                        if (isHighDemand && st.shifts[day].text === "OFF" && sIdx < 3) {
+                            st.shifts[day] = { text: "7 am - 4 pm", type: "morning" };
+                        }
+                    });
+                }
+            });
+
+            triggerAutosave();
+            renderApp();
+            showToast("✨ ¡Auto-planificador aplicado a la semana actual!");
+        }
+
+        function renderApp() {
+            const weekInfo = getFormattedWeekDays();
+            document.getElementById('table-main-title').textContent = weekInfo.weekTitle;
+            document.getElementById('week-display-label').textContent = weekInfo.weekTitle.replace("Horario ", "");
+
+            let totalStaffCount = 0;
+            currentData.departments.forEach(d => totalStaffCount += d.staff.length);
+            document.getElementById('total-staff-count').innerHTML = `${totalStaffCount} <span class="text-[11px] font-normal text-slate-500">empleados</span>`;
+
+            const table = document.getElementById('schedule-table');
+            let html = '';
+
+            html += `<tr class="bg-teal-400 text-slate-900 font-bold border-b border-teal-500">`;
+            html += `<td class="py-2 px-3 border-r border-teal-500">Días</td>`;
+            weekInfo.days.forEach(day => html += `<td class="py-2 px-2 border-r border-teal-500">${day}</td>`);
+            html += `</tr>`;
+
+            html += `<tr class="bg-amber-400 text-slate-900 font-bold border-b border-amber-500">`;
+            html += `<td class="py-2.5 px-3 border-r border-amber-500">Dinners</td>`;
+            currentData.dinners.forEach((dinner, idx) => {
+                html += `<td class="py-2 px-2 border-r border-amber-500 text-[11px] font-semibold cursor-pointer hover:bg-amber-300 transition relative group" onclick="openDinnerModal(${idx})">`;
+                html += `<div class="whitespace-normal leading-tight px-1"><span>${dinner}</span></div><span class="absolute right-1 top-1 opacity-0 group-hover:opacity-100 text-[9px] text-amber-900"><i class="fa-solid fa-pen"></i></span></td>`;
+            });
+            html += `</tr>`;
+
+            html += `<tr class="bg-teal-300 text-slate-900 font-medium border-b border-teal-400">`;
+            html += `<td class="py-2.5 px-3 border-r border-teal-400 font-semibold">Evento</td>`;
+            currentData.events.forEach((ev, idx) => {
+                html += `<td class="py-2 px-2 border-r border-teal-400 cursor-pointer hover:bg-teal-200 transition relative group" onclick="openEventModal(${idx})">`;
+                html += `<div class="whitespace-normal leading-tight px-1"><span>${ev}</span></div><span class="absolute right-1 top-1 opacity-0 group-hover:opacity-100 text-[9px] text-teal-900"><i class="fa-solid fa-pen"></i></span></td>`;
+            });
+            html += `</tr>`;
+
+            html += `<tr class="bg-sky-400 text-slate-900 font-bold border-b-2 border-indigo-900">`;
+            html += `<td class="py-2 px-3 border-r border-sky-500">BH Ocupación</td>`;
+            currentData.occupancy.forEach((occ, idx) => {
+                html += `<td class="py-2 px-2 border-r border-sky-500 font-bold text-indigo-950 cursor-pointer hover:bg-sky-300 transition relative group" onclick="openOccupancyModal(${idx})">`;
+                html += `<span>${occ}</span><span class="absolute right-1 top-1 opacity-0 group-hover:opacity-100 text-[9px] text-indigo-900"><i class="fa-solid fa-pen"></i></span></td>`;
+            });
+            html += `</tr>`;
+
+            currentData.departments.forEach((dept, dIdx) => {
+                html += `<tr class="bg-indigo-950 text-white font-bold text-left"><td colspan="8" class="py-2 px-3 tracking-wider text-[11px] uppercase">${dept.name}</td></tr>`;
+
+                dept.staff.forEach((member, sIdx) => {
+                    html += `<tr class="border-b border-slate-200 hover:bg-slate-50/80 transition">`;
+                    html += `<td class="py-2 px-3 font-semibold text-slate-700 text-left border-r border-slate-200 bg-slate-50/60 truncate">${member.name}</td>`;
+                    
+                    member.shifts.forEach((shift, dayIdx) => {
+                        let cssClass = '';
+                        if(shift.type === 'morning') cssClass = 'shift-morning';
+                        else if(shift.type === 'afternoon') cssClass = 'shift-afternoon';
+                        else if(shift.type === 'night') cssClass = 'shift-night';
+                        else if(shift.type === 'vacation') cssClass = 'shift-vacation';
+                        else if(shift.type === 'off') cssClass = 'shift-off';
+
+                        html += `<td class="py-2 px-1.5 border-r border-slate-200 text-[11px] relative has-tooltip cursor-pointer interactive-cell rounded-md m-0.5 ${cssClass}" onclick="openEditModal(${dIdx}, ${sIdx}, ${dayIdx})">`;
+                        html += `<div class="whitespace-normal leading-tight">${shift.text.replace('\n', '<br>')}</div></td>`;
+                    });
+                    html += `</tr>`;
+                });
+            });
+
+            table.innerHTML = html;
+            renderPeakIndicators(weekInfo.days);
+            calculateLaborWarnings(weekInfo.days);
+            runOperationalIntelligence(weekInfo.days);
+        }
+
+        // --- MOTOR DE INTELIGENCIA OPERATIVA ---
+        function getOccupancyCategory(occ) {
+            if (occ < 50) return { label: "Muy Baja", class: "bg-blue-100 text-blue-800 border-blue-300" };
+            if (occ < 90) return { label: "Normal", class: "bg-emerald-100 text-emerald-800 border-emerald-300" };
+            if (occ < 150) return { label: "Media", class: "bg-amber-100 text-amber-800 border-amber-300" };
+            if (occ < 250) return { label: "Alta", class: "bg-orange-100 text-orange-800 border-orange-300" };
+            return { label: "Extrema", class: "bg-rose-100 text-rose-800 border-rose-300 font-bold" };
+        }
+
+        function runOperationalIntelligence(daysList) {
+            let shortages = [];
+            let surpluses = [];
+            let recommendations = [];
+
+            currentData.occupancy.forEach((occ, dayIdx) => {
+                let dayName = daysList[dayIdx];
+                let eventText = currentData.events[dayIdx] || "--";
+                let cat = getOccupancyCategory(occ);
+
+                let activeStaff = 0;
+                currentData.departments.forEach(dept => {
+                    dept.staff.forEach(st => {
+                        if (!st.shifts[dayIdx].text.includes('OFF') && !st.shifts[dayIdx].text.includes('Vacaciones')) {
+                            activeStaff++;
+                        }
+                    });
+                });
+
+                if (occ >= 150 || eventText !== "--") {
+                    shortages.push({
+                        title: `Refuerzo Requerido en ${dayName}`,
+                        desc: `Ocupación ${cat.label} (${occ} pax)${eventText !== '--' ? ' con Evento: ' + eventText : ''}. Plantilla activa: ${activeStaff} elementos.`
+                    });
+                }
+
+                if (occ < 90 && activeStaff > 9) {
+                    surpluses.push({
+                        title: `Exceso Operativo en ${dayName}`,
+                        desc: `Ocupación ${cat.label} (${occ} huéspedes) con ${activeStaff} elementos. Oportunidad de rotar descansos.`
+                    });
+                }
+            });
+
+            const maxOcc = Math.max(...currentData.occupancy);
+            const maxIdx = currentData.occupancy.indexOf(maxOcc);
+            recommendations.push({
+                title: `Pico Semanal (${daysList[maxIdx]})`,
+                desc: `Se registran ${maxOcc} huéspedes. Asegurar supervisión en accesos de seguridad y apoyo total en Bellman.`
+            });
+
+            recommendations.push({
+                title: `Optimización General`,
+                desc: `Mantener la rotación equilibrada de turnos nocturnos para evitar fatiga en el personal de seguridad.`
+            });
+
+            document.getElementById('shortage-count').textContent = shortages.length;
+            const shortageEl = document.getElementById('shortage-alerts-list');
+            shortageEl.innerHTML = shortages.length === 0 ? `<p class="text-xs text-indigo-300 italic">Sin alertas de escasez.</p>` : shortages.map(s => `<div class="bg-rose-950/60 p-2.5 rounded-lg border border-rose-800/60"><strong class="text-rose-200 block text-[11px]">${s.title}</strong><span class="text-rose-300/90 text-[10px]">${s.desc}</span></div>`).join('');
+
+            document.getElementById('surplus-count').textContent = surpluses.length;
+            const surplusEl = document.getElementById('surplus-alerts-list');
+            surplusEl.innerHTML = surpluses.length === 0 ? `<p class="text-xs text-indigo-300 italic">Sin excesos detectados.</p>` : surpluses.map(s => `<div class="bg-sky-950/60 p-2.5 rounded-lg border border-sky-800/60"><strong class="text-sky-200 block text-[11px]">${s.title}</strong><span class="text-sky-300/90 text-[10px]">${s.desc}</span></div>`).join('');
+
+            const recEl = document.getElementById('recommendations-list');
+            recEl.innerHTML = recommendations.map(r => `<div class="bg-emerald-950/50 p-2.5 rounded-lg border border-emerald-800/50"><strong class="text-emerald-200 block text-[11px]">${r.title}</strong><span class="text-emerald-300/90 text-[10px]">${r.desc}</span></div>`).join('');
+        }
+
+        function calculateLaborWarnings(daysList) {
+            let warnings = [];
+            if (currentData && currentData.departments) {
+                currentData.departments.forEach(dept => {
+                    dept.staff.forEach(member => {
+                        for (let i = 0; i < member.shifts.length - 1; i++) {
+                            let cur = member.shifts[i]?.text || '';
+                            let nxt = member.shifts[i + 1]?.text || '';
+                            if (cur.includes("9 pm - 6 am") && nxt.includes("6 am - 3 pm")) {
+                                warnings.push({ title: `${member.name} (${dept.name})`, desc: `Descanso insuficiente (<11h) entre ${daysList[i]} y ${daysList[i + 1]}.` });
+                            }
+                        }
+                    });
+                });
+
+                currentData.departments.forEach(dept => {
+                    if (dept.name === "SEGURIDAD" || dept.name === "BELLMANS") {
+                        daysList.forEach((dayName, dayIdx) => {
+                            let hasAM = false, hasPM = false, nightCount = 0;
+                            dept.staff.forEach(st => {
+                                let txt = st.shifts[dayIdx]?.text || '';
+                                if (txt.includes("7 am") || txt.includes("6 am")) hasAM = true;
+                                if (txt.includes("2 pm")) hasPM = true;
+                                if (txt.includes("9 pm - 6 am")) nightCount++;
+                            });
+                            if (!hasAM) warnings.push({ title: `${dept.name} - ${dayName}`, desc: `Falta cobertura obligatoria en Turno AM.` });
+                            if (!hasPM) warnings.push({ title: `${dept.name} - ${dayName}`, desc: `Falta cobertura obligatoria en Turno PM.` });
+                            if (dept.name === "SEGURIDAD" && nightCount > 1) {
+                                warnings.push({ title: `Seguridad - ${dayName}`, desc: `Exceso nocturno: Hay ${nightCount} elementos (límite 1).` });
+                            }
+                        });
+                    }
+                });
+            }
+            document.getElementById('labor-warnings-count').textContent = warnings.length;
+            const warningsContent = document.getElementById('warnings-content');
+            if (warningsContent) {
+                warningsContent.innerHTML = warnings.length === 0 ? `<p class="text-xs text-slate-500 text-center py-4">¡Excelente! Cobertura 24/7 garantizada y cero infracciones laborales.</p>` : warnings.map(w => `<div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start space-x-3"><div class="text-amber-600 mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i></div><div><h4 class="text-xs font-bold text-amber-900">${w.title}</h4><p class="text-xs text-amber-800 mt-0.5">${w.desc}</p></div></div>`).join('');
+            }
+        }
+
+        function changeWeek(direction) {
+            let baseDate = new Date(currentStartDate + "T00:00:00");
+            baseDate.setDate(baseDate.getDate() + (direction * 7));
+            currentStartDate = getMondayDateStr(baseDate);
+            initFirebaseSyncForCurrentWeek();
+            showToast(direction > 0 ? "Avanzando a la semana siguiente..." : "Retrocediendo a la semana anterior...");
+        }
+
+        // --- MODALES Y ACCIONES ---
+        function openOccupancyModal(idx) {
+            activeOccupancyIdx = idx;
+            const weekInfo = getFormattedWeekDays();
+            document.getElementById('occupancy-target-label').textContent = `Ocupación para ${weekInfo.days[idx]}`;
+            document.getElementById('occupancy-input-value').value = currentData.occupancy[idx];
+            document.getElementById('occupancy-modal').classList.remove('hidden');
+        }
+        function closeOccupancyModal() { document.getElementById('occupancy-modal').classList.add('hidden'); activeOccupancyIdx = null; }
+        function saveOccupancyEdit() {
+            if(activeOccupancyIdx === null) return;
+            let val = parseInt(document.getElementById('occupancy-input-value').value);
+            if(!isNaN(val)) {
+                currentData.occupancy[activeOccupancyIdx] = val;
+                triggerAutosave();
+                renderApp();
+                showToast("Ocupación actualizada.");
+            }
+            closeOccupancyModal();
+        }
+
+        function openDinnerModal(idx) {
+            activeDinnerIdx = idx;
+            const weekInfo = getFormattedWeekDays();
+            document.getElementById('dinner-target-label').textContent = `Dinner para ${weekInfo.days[idx]}`;
+            document.getElementById('dinner-input-value').value = currentData.dinners[idx];
+            document.getElementById('dinner-modal').classList.remove('hidden');
+        }
+        function onDinnerPresetChange() {
+            let sel = document.getElementById('dinner-preset-select').value;
+            let inp = document.getElementById('dinner-input-value');
+            if(sel !== "Custom") { inp.value = sel; inp.disabled = true; } else { inp.disabled = false; inp.value = ""; inp.focus(); }
+        }
+        function closeDinnerModal() { document.getElementById('dinner-modal').classList.add('hidden'); activeDinnerIdx = null; }
+        function saveDinnerEdit() {
+            if(activeDinnerIdx === null) return;
+            let val = document.getElementById('dinner-input-value').value.trim();
+            if(val) {
+                currentData.dinners[activeDinnerIdx] = val;
+                triggerAutosave();
+                renderApp();
+                showToast("Dinner actualizado.");
+            }
+            closeDinnerModal();
+        }
+
+        function openEventModal(idx) {
+            activeEventIdx = idx;
+            const weekInfo = getFormattedWeekDays();
+            document.getElementById('event-target-label').textContent = `Evento para ${weekInfo.days[idx]}`;
+            document.getElementById('event-input-value').value = currentData.events[idx];
+            document.getElementById('event-modal').classList.remove('hidden');
+        }
+        function onEventPresetChange() {
+            let sel = document.getElementById('event-preset-select').value;
+            let inp = document.getElementById('event-input-value');
+            if(sel !== "Custom") { inp.value = sel; inp.disabled = true; } else { inp.disabled = false; inp.value = ""; inp.focus(); }
+        }
+        function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); activeEventIdx = null; }
+        function saveEventEdit() {
+            if(activeEventIdx === null) return;
+            let val = document.getElementById('event-input-value').value.trim();
+            if(val) {
+                currentData.events[activeEventIdx] = val;
+                triggerAutosave();
+                renderApp();
+                showToast("Evento actualizado.");
+            }
+            closeEventModal();
+        }
+
+        function renderPeakIndicators(daysList) {
+            const container = document.getElementById('peak-occupancy-indicators');
+            let html = '';
+            currentData.occupancy.forEach((occ, idx) => {
+                let dayShort = daysList[idx].split(' ')[0].substring(0,3);
+                let cat = getOccupancyCategory(occ);
+                html += `<div class="p-1.5 rounded-lg border ${cat.class} flex flex-col items-center justify-center">`;
+                html += `<span class="text-[9px] uppercase font-semibold">${dayShort}</span><span class="text-xs font-bold mt-0.5">${occ}</span></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleIntelligencePanel() {
+            const body = document.getElementById('intelligence-panel-body');
+            const chevron = document.getElementById('intel-chevron');
+            const text = document.getElementById('intel-toggle-text');
+            if(body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                chevron.className = "fa-solid fa-chevron-down mr-1.5";
+                text.textContent = "Ocultar Panel";
+            } else {
+                body.classList.add('hidden');
+                chevron.className = "fa-solid fa-chevron-right mr-1.5";
+                text.textContent = "Mostrar Panel";
+            }
+        }
+
+        function openWarningsModal() { document.getElementById('warnings-modal').classList.remove('hidden'); }
+        function closeWarningsModal() { document.getElementById('warnings-modal').classList.add('hidden'); }
+        function openSummaryModal() { document.getElementById('summary-modal').classList.remove('hidden'); }
+        function closeSummaryModal() { document.getElementById('summary-modal').classList.add('hidden'); }
+        
+        function openEditModal(dIdx, sIdx, dayIdx) {
+            activeEditCell = {dIdx, sIdx, dayIdx};
+            const shift = currentData.departments[dIdx].staff[sIdx].shifts[dayIdx];
+            document.getElementById('edit-target-label').textContent = `${currentData.departments[dIdx].staff[sIdx].name}`;
+            document.getElementById('edit-input-value').value = shift.text;
+            document.getElementById('edit-note-value').value = "";
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        function selectPresetShift(txt, type) {
+            if(!activeEditCell) return;
+            const {dIdx, sIdx, dayIdx} = activeEditCell;
+            currentData.departments[dIdx].staff[sIdx].shifts[dayIdx] = {text: txt, type: type};
+            triggerAutosave();
+            renderApp();
+            closeEditModal();
+            showToast("Turno actualizado.");
+        }
+
+        function saveCellEdit() {
+            if(!activeEditCell) return;
+            const {dIdx, sIdx, dayIdx} = activeEditCell;
+            let mainVal = document.getElementById('edit-input-value').value.trim();
+            let noteVal = document.getElementById('edit-note-value').value.trim();
+
+            let finalVal = mainVal;
+            let detectedType = 'morning';
+
+            if(mainVal.includes('pm') || mainVal.includes('PM')) detectedType = 'afternoon';
+            if(mainVal.includes('9 pm') || mainVal.includes('9 PM')) detectedType = 'night';
+            if(mainVal.toUpperCase() === 'OFF') detectedType = 'off';
+            if(mainVal.toUpperCase().includes('VACACIONES')) detectedType = 'vacation';
+
+            if(noteVal) {
+                if(!noteVal.startsWith('(')) noteVal = '(' + noteVal;
+                if(!noteVal.endsWith(')')) noteVal = noteVal + ')';
+                finalVal = mainVal + '\n' + noteVal;
+            }
+
+            currentData.departments[dIdx].staff[sIdx].shifts[dayIdx] = {text: finalVal, type: detectedType};
+            triggerAutosave();
+            renderApp();
+            closeEditModal();
+            showToast("Turno guardado con éxito.");
+        }
+
+        function exportToWhatsApp() {
+            showToast("Generando imagen completa...");
+            const targetEl = document.getElementById('schedule-export-container');
+            
+            html2canvas(targetEl, { 
+                scale: 2, 
+                useCORS: true,
+                windowWidth: targetEl.scrollWidth,
+                onclone: (clonedDoc) => {
+                    let clonedEl = clonedDoc.getElementById('schedule-export-container');
+                    clonedEl.style.maxHeight = 'none';
+                    clonedEl.style.overflow = 'visible';
+                }
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Horario_Operativo_BeachHouse.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        window.onload = function() {
+            initFirebaseSyncForCurrentWeek();
+        };
+    </script>
+</body>
+</html>
+
+  <script>
+    
+  </script>
+</body>
+</html>
